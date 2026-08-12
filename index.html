@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 CC Validator - Development Tool</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background: #0a0a0f; color: #e0e0e0; font-family: 'Inter', sans-serif; min-height: 100vh; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; background: #12121a; border-radius: 24px; padding: 30px; border: 1px solid #2a2a3e; }
+        .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 20px; border-bottom: 1px solid #2a2a3e; margin-bottom: 25px; flex-wrap: wrap; gap: 15px; }
+        .logo h1 { font-size: 24px; font-weight: 800; background: linear-gradient(135deg, #00ff88, #00bbff); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .logo span { font-size: 12px; color: #8892b0; display: block; }
+        .badge { background: #1a1a2e; padding: 8px 16px; border-radius: 20px; border: 1px solid #2a2a3e; font-size: 12px; color: #8892b0; }
+        
+        .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: #1a1a2e; padding: 16px; border-radius: 12px; border: 1px solid #2a2a3e; text-align: center; }
+        .stat-number { font-size: 28px; font-weight: 800; font-family: 'Fira Code', monospace; }
+        .stat-number.green { color: #00ff88; }
+        .stat-number.red { color: #ff0044; }
+        .stat-number.blue { color: #00bbff; }
+        .stat-number.yellow { color: #ffaa00; }
+        .stat-label { font-size: 12px; color: #8892b0; margin-top: 4px; text-transform: uppercase; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .panel { background: #1a1a2e; border-radius: 16px; padding: 20px; border: 1px solid #2a2a3e; }
+        .panel h3 { font-size: 14px; color: #8892b0; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 12px; }
+        
+        textarea { width: 100%; min-height: 120px; background: #0d0d15; border: 1px solid #2a2a3e; border-radius: 10px; padding: 12px 16px; color: #e0e0e0; font-family: 'Fira Code', monospace; font-size: 13px; resize: vertical; }
+        textarea:focus { outline: none; border-color: #00ff88; }
+        
+        .input-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+        .input-row input { flex: 1; min-width: 150px; background: #0d0d15; border: 1px solid #2a2a3e; border-radius: 10px; padding: 10px 14px; color: #e0e0e0; font-family: 'Fira Code', monospace; }
+        .input-row input:focus { outline: none; border-color: #00ff88; }
+        .input-row input::placeholder { color: #495670; }
+        
+        .btn { padding: 10px 20px; border: none; border-radius: 10px; font-weight: 600; font-size: 14px; cursor: pointer; transition: all 0.3s ease; font-family: 'Inter', sans-serif; text-transform: uppercase; letter-spacing: 0.5px; }
+        .btn-primary { background: linear-gradient(135deg, #00ff88, #00cc77); color: #000; }
+        .btn-primary:hover { transform: scale(1.02); box-shadow: 0 0 30px rgba(0,255,136,0.3); }
+        .btn-secondary { background: #0d0d15; color: #8892b0; border: 1px solid #2a2a3e; }
+        .btn-secondary:hover { border-color: #00ff88; color: #e0e0e0; }
+        .btn-danger { background: linear-gradient(135deg, #ff0044, #cc0033); color: #fff; }
+        .btn-danger:hover { transform: scale(1.02); box-shadow: 0 0 30px rgba(255,0,68,0.3); }
+        .btn-copy { background: #a855f7; color: #fff; padding: 4px 12px; font-size: 12px; border-radius: 6px; border: none; cursor: pointer; }
+        .btn-copy:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(168,85,247,0.3); }
+        
+        .result-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; margin-bottom: 6px; background: #0d0d15; border-radius: 8px; border-left: 3px solid #495670; animation: slideIn 0.3s ease; }
+        .result-item.valid { border-left-color: #00ff88; }
+        .result-item.invalid { border-left-color: #ff0044; }
+        .result-number { font-family: 'Fira Code', monospace; font-size: 14px; font-weight: 600; }
+        .result-brand { font-size: 11px; color: #8892b0; }
+        .result-status { font-size: 12px; font-weight: 700; }
+        .result-status.valid { color: #00ff88; }
+        .result-status.invalid { color: #ff0044; }
+        .result-actions { display: flex; gap: 8px; align-items: center; }
+        
+        .logs-container { max-height: 300px; overflow-y: auto; font-family: 'Fira Code', monospace; font-size: 12px; }
+        .logs-container::-webkit-scrollbar { width: 6px; }
+        .logs-container::-webkit-scrollbar-track { background: #0a0a0f; }
+        .logs-container::-webkit-scrollbar-thumb { background: #2a2a3e; border-radius: 3px; }
+        .log-entry { padding: 4px 0; border-bottom: 1px solid rgba(42,42,62,0.3); display: flex; gap: 12px; }
+        .log-time { color: #495670; min-width: 80px; }
+        .log-status { font-weight: 700; min-width: 60px; }
+        .log-status.info { color: #00bbff; }
+        .log-status.valid { color: #00ff88; }
+        .log-status.invalid { color: #ff0044; }
+        .log-message { color: #8892b0; word-break: break-all; }
+        
+        @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } .stats { grid-template-columns: repeat(2, 1fr); } }
+        
+        .toast { position: fixed; bottom: 30px; right: 30px; background: #1a1a2e; border: 1px solid #00ff88; border-radius: 12px; padding: 16px 24px; color: #e0e0e0; font-size: 14px; box-shadow: 0 10px 40px rgba(0,0,0,0.8); transform: translateY(100px); opacity: 0; transition: all 0.5s ease; z-index: 9999; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .toast-close { margin-left: 20px; cursor: pointer; opacity: 0.5; }
+        .toast-close:hover { opacity: 1; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <div class="logo"><h1>🔍 CC Validator</h1><span>Development Tool • Luhn Algorithm • BIN Detection</span></div>
+        <div class="badge">⚡ For Testing &amp; Development Only</div>
+    </div>
+
+    <div class="stats">
+        <div class="stat-card"><div class="stat-number blue" id="totalCount">0</div><div class="stat-label">Total</div></div>
+        <div class="stat-card"><div class="stat-number green" id="validCount">0</div><div class="stat-label">✅ Valid</div></div>
+        <div class="stat-card"><div class="stat-number red" id="invalidCount">0</div><div class="stat-label">❌ Invalid</div></div>
+        <div class="stat-card"><div class="stat-number yellow" id="generatedCount">0</div><div class="stat-label">📦 Generated</div></div>
+    </div>
+
+    <div class="grid-2">
+        <!-- Generator Panel -->
+        <div class="panel">
+            <h3>🎲 Generate Test Cards</h3>
+            <div class="input-row">
+                <input type="text" id="binInput" placeholder="BIN (e.g., 411111)" value="411111">
+                <input type="number" id="countInput" placeholder="Count" value="5" min="1" max="100">
+                <input type="number" id="amountInput" placeholder="Amount (optional)" value="100">
+            </div>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;">
+                <button class="btn btn-primary" onclick="generateCards()">🎲 Generate</button>
+                <button class="btn btn-secondary" onclick="copyGenerated()">📋 Copy All</button>
+                <button class="btn btn-danger" onclick="clearGenerated()">🗑 Clear</button>
+            </div>
+            <div id="generatedContainer" style="max-height:200px;overflow-y:auto;">
+                <div style="color:#495670;text-align:center;padding:20px;">No cards generated yet</div>
+            </div>
+        </div>
+
+        <!-- Validator Panel -->
+        <div class="panel">
+            <h3>🔍 Validate Cards</h3>
+            <textarea id="cardInput" placeholder="Paste cards here...&#10;4111111111111111|12|25|123&#10;5555555555554444|01|26|789"></textarea>
+            <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:10px;">
+                <button class="btn btn-primary" onclick="validateCards()">🔍 Validate</button>
+                <button class="btn btn-secondary" onclick="clearResults()">🗑 Clear</button>
+                <button class="btn btn-secondary" onclick="loadSample()">📄 Sample</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Results Panel -->
+    <div class="panel" style="margin-top:20px;">
+        <h3>📊 Results</h3>
+        <div id="resultsContainer" style="max-height:300px;overflow-y:auto;">
+            <div style="color:#495670;text-align:center;padding:20px;">No cards validated yet</div>
+        </div>
+    </div>
+
+    <!-- Logs -->
+    <div class="panel" style="margin-top:20px;">
+        <h3>📋 Logs</h3>
+        <div class="logs-container" id="logsContainer">
+            <div class="log-entry"><span class="log-time">[SYSTEM]</span><span class="log-status info">INFO</span><span class="log-message">🔍 CC Validator ready. Paste cards or generate test numbers.</span></div>
+        </div>
+    </div>
+</div>
+
+<div class="toast" id="toast"><span id="toastMessage">Copied!</span><span class="toast-close" onclick="hideToast()">✕</span></div>
+
+<script>
+// ============================================================
+// CARD BRAND DETECTION
+// ============================================================
+const BRANDS = [
+    { pattern: /^4/, name: 'Visa', color: '#1a1f71' },
+    { pattern: /^5[1-5]/, name: 'Mastercard', color: '#eb001b' },
+    { pattern: /^222[1-9]|^22[3-9]|^2[3-6]/, name: 'Mastercard', color: '#eb001b' },
+    { pattern: /^3[47]/, name: 'Amex', color: '#006fcf' },
+    { pattern: /^6(?:011|5)/, name: 'Discover', color: '#ff6000' },
+    { pattern: /^35(?:2[89]|[3-8])/, name: 'JCB', color: '#003a7a' },
+    { pattern: /^30[0-5]|^36|^38/, name: 'Diners Club', color: '#0079be' },
+    { pattern: /^50[0-5]|^2[2-7]/, name: 'Maestro', color: '#0099cc' },
+    { pattern: /^62/, name: 'UnionPay', color: '#e60012' },
+];
+
+function detectBrand(number) {
+    const clean = number.replace(/\D/g, '');
+    for (const brand of BRANDS) {
+        if (brand.pattern.test(clean)) return brand;
+    }
+    return { name: 'Unknown', color: '#8892b0' };
+}
+
+// ============================================================
+// LUHN ALGORITHM
+// ============================================================
+function luhnCheck(number) {
+    const digits = number.replace(/\D/g, '').split('').map(Number);
+    if (digits.length < 13 || digits.length > 19) return false;
+    let sum = 0;
+    for (let i = digits.length - 1; i >= 0; i--) {
+        let digit = digits[i];
+        if ((digits.length - i) % 2 === 0) {
+            digit *= 2;
+            if (digit > 9) digit -= 9;
+        }
+        sum += digit;
+    }
+    return sum % 10 === 0;
+}
+
+// ============================================================
+// GENERATE TEST CARDS (Luhn-compliant)
+// ============================================================
+function generateCard(bin, length = 16) {
+    const cleanBin = bin.replace(/\D/g, '');
+    let card = cleanBin;
+    while (card.length < length - 1) {
+        card += Math.floor(Math.random() * 10);
+    }
+    // Calculate check digit
+    const digits = card.split('').map(Number);
+    let sum = 0;
+    for (let i = digits.length - 1; i >= 0; i--) {
+        let digit = digits[i];
+        if ((digits.length - i) % 2 === 0) {
+            digit *= 2;
+            if (digit > 9) digit -= 9;
+        }
+        sum += digit;
+    }
+    const checkDigit = (10 - (sum % 10)) % 10;
+    return card + checkDigit;
+}
+
+function generateCards() {
+    const bin = document.getElementById('binInput').value.trim() || '411111';
+    const count = parseInt(document.getElementById('countInput').value) || 5;
+    const amount = parseInt(document.getElementById('amountInput').value) || 100;
+    
+    if (count < 1 || count > 100) { showToast('Count must be between 1 and 100', '⚠️'); return; }
+    
+    const cards = [];
+    const length = bin.length >= 15 ? 16 : (bin.length >= 14 ? 15 : 16);
+    
+    for (let i = 0; i < count; i++) {
+        const number = generateCard(bin, length);
+        const month = String(Math.floor(Math.random() * 12) + 1).padStart(2, '0');
+        const year = String(Math.floor(Math.random() * 5) + 24);
+        const cvv = String(Math.floor(Math.random() * 900) + 100);
+        cards.push({ number, month, year, cvv, amount });
+    }
+    
+    window._generatedCards = cards;
+    document.getElementById('generatedCount').textContent = cards.length;
+    
+    const container = document.getElementById('generatedContainer');
+    container.innerHTML = cards.map((c, i) => `
+        <div class="result-item valid">
+            <div>
+                <span class="result-number">${c.number}|${c.month}|${c.year}|${c.cvv}</span>
+                <span class="result-brand">${detectBrand(c.number).name} • $${c.amount}</span>
+            </div>
+            <div class="result-actions">
+                <span class="result-status valid">✅</span>
+                <button class="btn-copy" onclick="copySingle('${c.number}|${c.month}|${c.year}|${c.cvv}')">📋</button>
+            </div>
+        </div>
+    `).join('');
+    
+    addLog('INFO', `Generated ${cards.length} test cards with BIN ${bin}`);
+    showToast(`✅ Generated ${cards.length} cards!`, '🎲');
+}
+
+function copyGenerated() {
+    if (!window._generatedCards || window._generatedCards.length === 0) {
+        showToast('No cards to copy!', '⚠️');
+        return;
+    }
+    const text = window._generatedCards.map(c => `${c.number}|${c.month}|${c.year}|${c.cvv}`).join('\n');
+    copyToClipboard(text);
+    showToast(`📋 Copied ${window._generatedCards.length} cards!`, '📋');
+}
+
+function clearGenerated() {
+    window._generatedCards = [];
+    document.getElementById('generatedContainer').innerHTML = '<div style="color:#495670;text-align:center;padding:20px;">No cards generated yet</div>';
+    document.getElementById('generatedCount').textContent = '0';
+    showToast('Generated cards cleared', '🗑');
+}
+
+// ============================================================
+// VALIDATE CARDS
+// ============================================================
+function validateCards() {
+    const input = document.getElementById('cardInput').value;
+    const lines = input.split('\n').filter(l => l.trim());
+    if (lines.length === 0) { showToast('Please enter cards to validate', '⚠️'); return; }
+    
+    const results = [];
+    let valid = 0, invalid = 0;
+    
+    for (const line of lines) {
+        const clean = line.trim().replace(/\s/g, '');
+        const parts = clean.split(/[|:,;]/);
+        const number = parts[0] ? parts[0].replace(/\D/g, '') : '';
+        const isValid = number.length >= 13 && number.length <= 19 && luhnCheck(number);
+        const brand = detectBrand(number);
+        const display = number.length > 4 ? `${number.slice(0,4)}****${number.slice(-4)}` : number;
+        
+        results.push({
+            original: line,
+            number: number,
+            display: display,
+            valid: isValid,
+            brand: brand.name,
+            color: brand.color,
+            length: number.length,
+            parts: parts
+        });
+        
+        if (isValid) valid++; else invalid++;
+    }
+    
+    document.getElementById('validCount').textContent = valid;
+    document.getElementById('invalidCount').textContent = invalid;
+    document.getElementById('totalCount').textContent = results.length;
+    
+    const container = document.getElementById('resultsContainer');
+    container.innerHTML = results.map(r => `
+        <div class="result-item ${r.valid ? 'valid' : 'invalid'}">
+            <div>
+                <span class="result-number">${r.display}</span>
+                <span class="result-brand">${r.brand} • ${r.length} digits</span>
+            </div>
+            <div class="result-actions">
+                <span class="result-status ${r.valid ? 'valid' : 'invalid'}">${r.valid ? '✅ VALID' : '❌ INVALID'}</span>
+                <button class="btn-copy" onclick="copySingle('${r.original}')">📋</button>
+            </div>
+        </div>
+    `).join('');
+    
+    addLog('INFO', `Validated ${results.length} cards: ${valid} valid, ${invalid} invalid`);
+    showToast(`✅ ${valid} valid, ${invalid} invalid`, valid > 0 ? '✅' : '❌');
+}
+
+function clearResults() {
+    document.getElementById('resultsContainer').innerHTML = '<div style="color:#495670;text-align:center;padding:20px;">No cards validated yet</div>';
+    document.getElementById('totalCount').textContent = '0';
+    document.getElementById('validCount').textContent = '0';
+    document.getElementById('invalidCount').textContent = '0';
+    showToast('Results cleared', '🗑');
+}
+
+function loadSample() {
+    const sample = `4111111111111111|12|25|123
+5555555555554444|01|26|789
+378282246310005|05|27|1234
+6011111111111117|11|24|123
+3530111333300000|09|26|1234`;
+    document.getElementById('cardInput').value = sample;
+    showToast('Sample cards loaded!', '📄');
+}
+
+// ============================================================
+// UTILITY FUNCTIONS
+// ============================================================
+function copySingle(text) {
+    copyToClipboard(text);
+    showToast('📋 Copied!', '📋');
+}
+
+function copyToClipboard(text) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+    } else {
+        fallbackCopy(text);
+    }
+}
+
+function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+}
+
+function addLog(status, message) {
+    const container = document.getElementById('logsContainer');
+    const time = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const div = document.createElement('div');
+    div.className = 'log-entry';
+    div.innerHTML = `<span class="log-time">[${time}]</span><span class="log-status ${status.toLowerCase()}">${status.toUpperCase()}</span><span class="log-message">${message}</span>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+function showToast(msg, icon = '✅') {
+    const toast = document.getElementById('toast');
+    document.getElementById('toastMessage').textContent = `${icon} ${msg}`;
+    toast.classList.add('show');
+    clearTimeout(window._toastTimer);
+    window._toastTimer = setTimeout(() => toast.classList.remove('show'), 3000);
+}
+
+function hideToast() {
+    document.getElementById('toast').classList.remove('show');
+}
+
+// ============================================================
+// KEYBOARD SHORTCUTS
+// ============================================================
+document.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'Enter') { e.preventDefault(); validateCards(); }
+    if (e.ctrlKey && e.key === 'g') { e.preventDefault(); generateCards(); }
+});
+</script>
+</body>
+</html>
